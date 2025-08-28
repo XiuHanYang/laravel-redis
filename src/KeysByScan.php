@@ -47,7 +47,13 @@ class KeysByScan
         }
 
         do {
-            [$cursor, $result] = $this->connection->scan($cursor, $options);
+            $scanResult = $this->performScan($cursor, $options);
+
+            if ($scanResult === false || !is_array($scanResult)) {
+                break;
+            }
+
+            [$cursor, $result] = $scanResult;
 
             if (!is_array($result)) {
                 break;
@@ -70,5 +76,43 @@ class KeysByScan
         sort($keys);
 
         return $keys;
+    }
+
+    private function performScan(&$cursor, array $options)
+    {
+        $client = $this->connection->client();
+
+        if ($client instanceof PhpRedisClient) {
+            return $this->performRawScan($cursor, $options);
+        }
+
+        $result = $this->connection->scan($cursor, $options);
+
+        return $result;
+    }
+
+    private function performRawScan(&$cursor, array $options): array|false
+    {
+        $client = $this->connection->client();
+        $args = [$cursor];
+
+        if (isset($options['match'])) {
+            $args[] = 'MATCH';
+            $args[] = $options['match'];
+        }
+
+        if (isset($options['count'])) {
+            $args[] = 'COUNT';
+            $args[] = $options['count'];
+        }
+
+        $result = $client->rawCommand('SCAN', ...$args);
+
+        if (!is_array($result) || count($result) !== 2) {
+            return false;
+        }
+
+        $cursor = (string)$result[0];
+        return [$cursor, $result[1]];
     }
 }
