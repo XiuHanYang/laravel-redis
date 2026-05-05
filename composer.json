@@ -29,5 +29,15 @@
     "config": {
         "preferred-install": "dist",
         "sort-packages": true
+    },
+    "suggest": {
+        "ext-redis": ">=6.0 (required for Lab104\\Laravel\\Redis\\Sentinel namespace; KeysByScan does not require it)"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Lab104\\Laravel\\Redis\\Sentinel\\SentinelServiceProvider"
+            ]
+        }
     }
 }
